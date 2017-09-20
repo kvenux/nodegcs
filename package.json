@@ -1,0 +1,23 @@
+{
+  "name": "nodegcs",
+  "version": "1.0.0",
+  "description": "MAVLink ground control station on node",
+  "keywords": [
+    "nodejs",
+    "ground control station",
+    "mavlink",
+    "ardupilot"
+  ],
+  "author": "kvenux",
+  "license": "GPL",
+  "bugs": {
+    "url": "https://github.com/kvenux/nodegcs/issues"
+  },
+  "homepage": "https://github.com/kvenux/nodegcs",
+  "devDependencies": {
+    "colors": "^1.1.2",
+    "mavlink": "^1.0.1",
+    "optimist": "^0.6.1",
+    "serialport": "^5.0.0"
+  }
+}
