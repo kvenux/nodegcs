@@ -1,17 +1,17 @@
 var colors = require('colors');
-var argv = require('optimist')
-.usage('nodejs based Ground Control Station\nUsage: $0')
-.alias('t', 'type')
-.describe('t', 'Specity the type of expected connection: serial or tcp, default is serial')
-.default('t', 'serial')
-.alias('p', 'path')
-.describe('p', 'Specify the path of serial or tcp connection, e.g. /dev/cu.usbmodem1 or 127.0.0.1:5760')
-.demand('path')
-.alias('b', 'baud')
-.describe('b', 'Specify baudrate of that serial port, default is 57600')
-.default('b', 57600)
-.argv
-;
+// var argv = require('optimist')
+// .usage('nodejs based Ground Control Station\nUsage: $0')
+// .alias('t', 'type')
+// .describe('t', 'Specity the type of expected connection: serial or tcp, default is serial')
+// .default('t', 'serial')
+// .alias('p', 'path')
+// .describe('p', 'Specify the path of serial or tcp connection, e.g. /dev/cu.usbmodem1 or 127.0.0.1:5760')
+// .demand('path')
+// .alias('b', 'baud')
+// .describe('b', 'Specify baudrate of that serial port, default is 57600')
+// .default('b', 57600)
+// .argv
+// ;
 
 var uas = require('./mavlink_connection.js');
 var emitter = uas.get_emitter();
@@ -28,7 +28,6 @@ white
 gray
 grey
 * */
-var port_path = argv.path;
 var stdin = process.openStdin();
 
 function custom_prompt(){
@@ -37,6 +36,71 @@ function custom_prompt(){
       process.stdout.write(uas.get_mode_str().magenta);
       process.stdout.write(' '.cyan);
     }
+}
+
+var connected = false;
+var mode_str = 'STABILIZE';
+var arm_status = 'Disarm'
+var sat_num = 0;
+var HDOP = 0;
+var VDOP = 0;
+var pitch = 0.0;
+var roll = 0.0;
+var yaw = 0.0;
+var lat = 0.0;
+var lng = 0.0;
+var vx = 0.0;
+var vy = 0.0;
+var alt = 0.0;
+var curwp = 0;
+var bat = 0.0;
+
+function refresh_cmdline() {
+  process.stdout.write('\033c');
+  if(connected){
+    process.stdout.write('Connected\t'.green.bold);
+  }
+  else{
+    process.stdout.write('Disconnected\t'.red.bold);
+  }
+  process.stdout.write(uas.get_mode_str().magenta);
+  process.stdout.write('\t'.cyan);
+  if(arm_status){
+    process.stdout.write('ARM\t'.yellow);
+  }
+  else{
+    process.stdout.write('DISARM\t'.blue);
+  }
+  var tmp_str = 'Sat'+sat_num+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'HDOP:'+HDOP+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'VDOP:'+VDOP+'\t';
+  process.stdout.write(tmp_str.cyan);
+  process.stdout.write('\n'.cyan);
+
+  tmp_str = 'Pitch:'+pitch+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Roll:'+roll+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Yaw:'+yaw+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Lat:'+lat+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Lng:'+lng+'\t';
+  process.stdout.write(tmp_str.cyan);
+  process.stdout.write('\n'.cyan);
+
+  tmp_str = 'X-Speed:'+vx+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Y-Speed:'+vy+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Height:'+alt+'\t';
+  process.stdout.write(tmp_str.cyan);
+  tmp_str = 'Current-Waypoint:'+curwp+'\t';
+  process.stdout.write(tmp_str.cyan);
+
+  process.stdout.write('➜ nodegcs '.cyan.bold);
 }
 
 function is_tcp_connection(path){
@@ -61,14 +125,18 @@ function start_connection(){
 }
 
 var connected = false;
-start_connection();
+// start_connection();
 // custom_prompt();
+refresh_cmdline();
 
 stdin.on('data', function(d) {
   var cmd_str = d.toString().trim();
   /*console.log(colors.blue(cmd_str));*/
   var cmd_list = cmd_str.split(' ')
   switch(cmd_list[0]){
+    case 'start':
+      uas.set_connection(1, '127.0.0.1', 5760);
+    break;
     case 'stop':
       uas.pause_serial();
     break;
