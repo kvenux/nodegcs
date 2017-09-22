@@ -16,7 +16,6 @@ function get_port_list() {
   /*serial = require("serialport");*/
   serial.list(function (err, ports) {
     emitter.emit('serial_list', ports);
-    // console.log(ports);
   });
 }
 get_port_list();
@@ -171,13 +170,11 @@ var seq_last = -1;
 
 function open_serial() {
   emitter.emit('connect_procedure', 1 / 3);
-  // console.log("port is open");
   mav_parser = new mavlink(system_ID, 1);
 
   //When mavlink is ready, assign some listeners
   mav_parser.on('ready', function () {
     emitter.emit('connect_procedure', 2 / 3);
-    // console.log("Mavlink is ready!");
     emitter.emit('serial_opened');
     mav_port.on('data', function (data) {
       if(data[0]!= 0 && data[1]!= 7){
@@ -190,7 +187,7 @@ function open_serial() {
 
     mav_parser.on('message', function (message, fields) {
       if (message.id == 26) {
-        console.log(message);
+        emitter.emit('status_text', message);
       }
       var seq = message.sequence;
       if (seq_last != -1) {
@@ -206,18 +203,15 @@ function open_serial() {
     });
 
     mav_parser.on('RADIO', function (message, fields) {
-      //console.log(fields);
     });
     mav_parser.on('RADIO_STATUS', function (message, fields) {
-      //console.log(fields);
     });
 
 
     // HEARTBEAT message
     mav_parser.on('HEARTBEAT', function (message, fields) {
-      //console.log(fields);
       gcsDate = new Date();
-      /*console.log(gcsDate.getTime() - last_heartbeat);*/
+      /*emitter.emit('status_text', gcsDate.getTime() - last_heartbeat);*/
       last_heartbeat = gcsDate.getTime();
       curently_armed = Boolean(fields.base_mode & mavheader.MAV_MODE_FLAG_DECODE_POSITION_SAFETY);
       if (curently_armed != base_status.system_is_armed) {
@@ -242,17 +236,17 @@ function open_serial() {
       base_status.frame_type = fields.type;
       base_status.autopilot_type = fields.autopilot;
       base_status.system_status = fields.system_status;
-      /*console.log(base_status);*/
-      /*console.log("Cur Mode: " +base_status.custom_mode);*/
-      /*console.log("Arming State: " +base_status.system_is_armed);*/
+      /*emitter.emit('status_text', base_status);*/
+      /*emitter.emit('status_text', "Cur Mode: " +base_status.custom_mode);*/
+      /*emitter.emit('status_text', "Arming State: " +base_status.system_is_armed);*/
       // emit heartbeat message
       emitter.emit('heartbeat', base_status);
     });
 
     // SYSTEM_STATUS message
     mav_parser.on('SYS_STATUS', function (message, fields) {
-      /*console.log("Roll is " + fields.roll + "\nPitch is " + fields.pitch);*/
-      /*console.log(fields);*/
+      /*emitter.emit('status_text', "Roll is " + fields.roll + "\nPitch is " + fields.pitch);*/
+      /*emitter.emit('status_text', fields);*/
       sys_status.cpu_load = fields.load * 10.0;
       sys_status.sensors_present = fields.onboard_control_sensors_present;
       sys_status.sensors_enabled = fields.onboard_control_sensors_enabled;
@@ -277,7 +271,7 @@ function open_serial() {
 
     // ATTITUDE message
     mav_parser.on('LOCAL_POSITION', function (message, fields) {
-      console.log(fields);
+      emitter.emit('status_text', fields);
     });
 
     // GLOBAL_POSITION_INT message
@@ -290,7 +284,6 @@ function open_serial() {
       global_position.vy = fields.vy;
       global_position.vz = fields.vz;
       global_position.hdg = fields.hdg;
-      //console.log(fields);
       emitter.emit('global_postion', fields);
     });
 
@@ -302,46 +295,38 @@ function open_serial() {
 
     // RC_CHANNELS_RAW message
     mav_parser.on('RC_CHANNELS_RAW', function (message, fields) {
-      // console.log(fields);
-      //console.log(message);
-      emitter.emit('rc_channels', fields);
     });
 
     // RC_CHANNELS_RAW message
     mav_parser.on('RC_CHANNELS_SCALED', function (message, fields) {
-      console.log(fields);
       //emitter.emit('rc_channels', fields);
     });
 
     // SERVO_OUTPUT_RAW message
     mav_parser.on('SERVO_OUTPUT_RAW', function (message, fields) {
-      //console.log(fields);
       emitter.emit('servo_output', fields);
     });
 
     // STATUS_TEXT message
     mav_parser.on('STATUSTEXT', function (message, fields) {
-      console.log(fields.text);
       var status_text = fields.text;
       var ARMING = 'ARMING MOTORS';
       var DISARMING = 'DISARMING MOTORS';
       var PRE_ARM = 'PreArm';
       var REACHED = 'Reached Command #';
       var LOW_BAT = 'Low battery';
+      emitter.emit('status_text', status_text);
       if (status_text.indexOf('DISARMING') >= 0) {
-        console.log('disarming signal');
-        //emitter.emit('disarming', status_text);
+        emitter.emit('disarming', status_text);
       }
       else if (status_text.indexOf('ARMING') >= 0) {
-        console.log('arming signal');
-        //emitter.emit('arming', status_text);
+        emitter.emit('arming', status_text);
       }
       if (status_text.indexOf(PRE_ARM) >= 0) {
         emitter.emit('prearm', status_text);
       }
       if (status_text.indexOf(REACHED) >= 0) {
         var reached_index = parseInt(status_text.substring(REACHED.length));
-        //console.log(reached_index);
         emitter.emit('reached', get_gcs_seq(reached_index));
       }
       if (status_text.indexOf(LOW_BAT) >= 0) {
@@ -351,32 +336,25 @@ function open_serial() {
 
     //  message
     mav_parser.on('RAW_IMU', function (message, fields) {
-      // console.log(fields);
       emitter.emit('raw_imu', fields);
     });
 
     //  message
     mav_parser.on('SCALED_IMU2', function (message, fields) {
-      // console.log(fields);
       emitter.emit('raw_imu2', fields);
     });
 
     // NAV_CONTROLLER_OUTPUT message
     mav_parser.on('NAV_CONTROLLER_OUTPUT', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // MEMINFO message
     mav_parser.on('MEMINFO', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // MISSION_CURRENT message
     mav_parser.on('MISSION_CURRENT', function (message, fields) {
-      // console.log(fields.seq);
-      //console.log(fields.seq, mission_list.length);
       if (current_mission_seq != fields.seq && fields.seq < mission_list.length) {
-        //console.log(mission_list[fields.seq]);
         if (current_mission_seq < fields.seq) {
           emitter.emit('current_cmd', mission_list[fields.seq]);
         }
@@ -388,58 +366,48 @@ function open_serial() {
       }
       emitter.emit('current_mission', ret_fields);
       if (fields.seq == mission_list.length - 1) {
-        //console.log('INFO: mission finished');
         //emitter.emit('mission_finished');
       }
     });
 
     // VFR_HUD message
     mav_parser.on('VFR_HUD', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // AHRS message
     mav_parser.on('AHRS', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // SYSTEM_TIME message
     mav_parser.on('SYSTEM_TIME', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // HWSTATUS message
     mav_parser.on('HWSTATUS', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // VIBRATION message
     mav_parser.on('VIBRATION', function (message, fields) {
-      /*console.log(fields);*/
     });
 
     // COMMAND_ACK message
     mav_parser.on('COMMAND_ACK', function (message, fields) {
-      // console.log(fields);
       emitter.emit('command_ack', fields);
     });
 
     // AUTOPILOT_VERSION message
     mav_parser.on('AUTOPILOT_VERSION', function (message, fields) {
-      console.log(fields);
     });
 
     // MISSION_ITEM message
     mav_parser.on('MISSION_ITEM', function (message, fields) {
-      console.log(fields);
-      //console.log(JSON.stringify(fields));
       var mission_index = fields.seq;
       if (mission_index >= 0 && mission_index < mission_len) {
         emitter.emit('reading_next', mission_index);
         mission_list[mission_index] = fields;
         emitter.emit('reading_single_mission', fields);
         if (mission_index == mission_len - 1) {
-          console.log('INFO: Mission reading finished');
+          emitter.emit('status_text', 'INFO: Mission reading finished');
           var mission_procedure = {
             index: mission_len,
             len: mission_len
@@ -459,27 +427,25 @@ function open_serial() {
         }
       }
       else {
-        console.log('ERROR: Receive seq not in regular range');
+        emitter.emit('status_text', 'ERROR: Receive seq not in regular range');
       }
     });
 
     // MISSION_COUNT message
     mav_parser.on('MISSION_COUNT', function (message, fields) {
-      console.log(fields);
       mission_len = fields.count;
       mission_get_all();
     });
 
     // MISSION_ACK message
     mav_parser.on('MISSION_ACK', function (message, fields) {
-      console.log(fields);
       if (mission_trans_state == MISSION_TRANS_STATE_TRANS) {
         mission_trans_state = MISSION_TRANS_STATE_IDLE;
-        console.log('Mission uploading finished');
+        emitter.emit('status_text', 'Mission uploading finished');
         gcsDate = new Date();
         mission_trans_end_time = gcsDate.getTime();
         var mission_trans_time = mission_trans_end_time - mission_trans_start_time;
-        console.log('Mission trans time using ' + mission_trans_time);
+        emitter.emit('status_text', 'Mission trans time using ' + mission_trans_time);
         var mission_procedure = {
           index: mission_len,
           len: mission_len
@@ -488,20 +454,20 @@ function open_serial() {
         emitter.emit('uploading_finished', fields);
       }
       else {
-        console.log('Unexpected MISSION_ACK');
+        emitter.emit('status_text', 'Unexpected MISSION_ACK');
       }
     });
 
     // MISSION_ACK message
     mav_parser.on('MISSION_REQUEST', function (message, fields) {
-      console.log(fields);
+      emitter.emit('status_text', fields);
       var mission_index = fields.seq;
       var mission_procedure = {
         index: mission_index + 1,
         len: mission_len
       };
       if (mission_index < 0 && mission_index > mission_len) {
-        console.log('ERROR: Receive seq not in regular range');
+        emitter.emit('status_text', 'ERROR: Receive seq not in regular range');
         return;
       }
       if (mission_trans_state == MISSION_TRANS_STATE_TRANS) {
@@ -512,12 +478,12 @@ function open_serial() {
 
     //  message
     mav_parser.on('RADIO', function (message, fields) {
-      console.log(fields);
+      emitter.emit('status_text', fields);
     });
 
     //  message
     mav_parser.on('PARAM_VALUE', function (message, fields) {
-      console.log(fields);
+      emitter.emit('status_text', fields);
     });
 
   });
@@ -529,15 +495,15 @@ function close_serial() {
 
 function serial_closed_callback() {
   emitter.emit('serial_closed');
-  console.log('port closed callback');
+  emitter.emit('status_text', 'port closed callback');
 }
 
 function show_error_callback(error) {
   if (error.message.indexOf('Port is opening') >= 0) {
-    console.log(error + ' --which can be ignored');
+    emitter.emit('status_text', error + ' --which can be ignored');
     return;
   }
-  console.log('serial port error: ' + error)
+  emitter.emit('status_text', 'serial port error: ' + error)
   clearInterval(heartbeat_timer);
   clearInterval(datastream_timer);
   clearInterval(update_heartbeat_timer);
@@ -576,7 +542,7 @@ function connect_serial() {
   else if (connection_type == 1) {
     mav_port = new net.Socket();
     mav_port.connect(connection_port, connection_path, function () {
-      console.log('Connected to sitl via tcp:' + connection_path + ':' + connection_port);
+      emitter.emit('status_text', 'Connected to sitl via tcp:' + connection_path + ':' + connection_port);
     });
   }
   else {
@@ -587,7 +553,7 @@ function connect_serial() {
     setTimeout(open_serial, 500);
   }
   else {
-    console.log('Connected to uav via serial:' + connection_path + ':' + connection_baud);
+    emitter.emit('status_text', 'Connected to uav via serial:' + connection_path + ':' + connection_baud);
     if (mav_port.isOpen()) {
       mav_port.close();
     }
@@ -609,14 +575,14 @@ function update_heartbeat() {
     connection_lost = true;
     received_mode = false;
     // here to emit connection lost message
-    console.log("Connection lost");
+    emitter.emit('status_text', "Connection lost");
     emitter.emit('connection_lost');
   }
 
   // update connection loss time
   if (connection_lost && (heartbeat_interval > timeout_interval_heartbeat)) {
     connection_losstime = heartbeat_interval;
-    /*console.log("Conection has last for " + connection_losstime/1000 + " seconds");*/
+    /*emitter.emit('status_text', "Conection has last for " + connection_losstime/1000 + " seconds");*/
   }
 
   // connection regained
@@ -624,7 +590,6 @@ function update_heartbeat() {
     connection_lost = false;
     connection_losstime = 0;
     // here to emit link regained message
-    // console.log("Connection regained!");
     emitter.emit('connection_regained');
     emitter.emit('connect_procedure', 1);
   }
@@ -633,7 +598,7 @@ function update_heartbeat() {
 
 function port_send_message(message) {
   if (mav_port == null) {
-    console.log('ERROR: port not initializded!');
+    emitter.emit('status_text', 'ERROR: port not initializded!');
     return;
   }
   if (connection_type == 1) {
@@ -641,13 +606,11 @@ function port_send_message(message) {
     return;
   }
   if (mav_port.isOpen()) {
-    //console.log('id: '+message.id+' length: '+message.length);
     mav_port.write(message.buffer);
     var now_date = new Date();
     var new_measurement_time = parseInt(now_date.getTime() / measurement_period);
     if (new_measurement_time != up_measurement_time) {
       emitter.emit('up_speed', up_bytes_per_sec / (new_measurement_time - up_measurement_time));
-      //console.log(up_bytes_per_sec/(new_measurement_time - up_measurement_time));
       up_bytes_per_sec = 0;
     }
     else {
@@ -656,14 +619,14 @@ function port_send_message(message) {
     up_measurement_time = new_measurement_time;
   }
   else {
-    /*console.log('ERROR: sending msg error on '+ message.id);*/
-    console.log('ERROR: Port not open! On msg id ' + message.id);
+    /*emitter.emit('status_text', 'ERROR: sending msg error on '+ message.id);*/
+    emitter.emit('status_text', 'ERROR: Port not open! On msg id ' + message.id);
   }
 }
 
 function port_send_customed_control(control_msg) {
   if (mav_port == null) {
-    console.log('ERROR: port not initializded!');
+    emitter.emit('status_text', 'ERROR: port not initializded!');
     return;
   }
   var msg_buf = new Buffer(20);
@@ -689,22 +652,20 @@ function port_send_customed_control(control_msg) {
   msg_buf[19] = control_msg.chan8 % 256;
   if (connection_type == 1) {
     mav_port.write(msg_buf);
-    // console.log(msg_buf)
     return;
   }
   if (mav_port.isOpen()) {
     mav_port.write(msg_buf);
-    // console.log(msg_buf)
   }
   else {
-    /*console.log('ERROR: sending msg error on '+ message.id);*/
-    console.log('ERROR: Port not open! On msg id ' + message.id);
+    /*emitter.emit('status_text', 'ERROR: sending msg error on '+ message.id);*/
+    emitter.emit('status_text', 'ERROR: Port not open! On msg id ' + message.id);
   }
 }
 
 function port_send_switch_control(id, command) {
   if (mav_port == null) {
-    console.log('ERROR: port not initializded!');
+    emitter.emit('status_text', 'ERROR: port not initializded!');
     return;
   }
   var msg_buf = new Buffer(6);
@@ -716,16 +677,14 @@ function port_send_switch_control(id, command) {
   msg_buf[5] = command;
   if (connection_type == 1) {
     mav_port.write(msg_buf);
-    console.log(msg_buf)
     return;
   }
   if (mav_port.isOpen()) {
     mav_port.write(msg_buf);
-    console.log(msg_buf)
   }
   else {
-    /*console.log('ERROR: sending msg error on '+ message.id);*/
-    console.log('ERROR: Port not open! On msg id ' + message.id);
+    /*emitter.emit('status_text', 'ERROR: sending msg error on '+ message.id);*/
+    emitter.emit('status_text', 'ERROR: Port not open! On msg id ' + message.id);
   }
 }
 
@@ -820,7 +779,6 @@ function send_default_datastream() {
     // 2
     setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3, rates_extra3), 200 * 8);
   }
-  //console.log('sending defaults');
 }
 
 function set_default_stream_rates(rate_0, rate_1, rate_2, rate_3, rate_4, rate_5, rate_6, rate_7) {
@@ -1059,7 +1017,7 @@ function mission_request_list() {
 
 function mission_request_list_check() {
   if (mission_len < 0) {
-    console.log('ERROR: Mission request list get count not legal');
+    emitter.emit('status_text', 'ERROR: Mission request list get count not legal');
     mission_len = 0;
   }
 }
@@ -1143,7 +1101,6 @@ function mission_write_rtl(seq, lat, lon, alt) {
 function mission_trans(seq) {
   mission = mission_list[current_trans_seq];
   /*if(mission.seq != current_mission_seq){
-    console.log('Current mission seq num is not equal to mission seq');
     return;
   }*/
   mission_write_waypoint(
@@ -1160,16 +1117,15 @@ function mission_trans(seq) {
 
 function init_mission_trans() {
   // starting mission transmit
-  //console.log(mission_trans_state)
   if (mission_len <= 0) {
-    console.log('ERROR: Start mission transmiting, mission length not legal');
+    emitter.emit('status_text', 'ERROR: Start mission transmiting, mission length not legal');
     return;
   }
   if (mission_trans_state == MISSION_TRANS_STATE_IDLE) {
     mission_trans_state = MISSION_TRANS_STATE_TRANS;
   }
   else {
-    console.log('Are we initting transmision during a transmision procedure?');
+    emitter.emit('status_text', 'Are we initting transmision during a transmision procedure?');
     return;
   }
 
@@ -1192,15 +1148,15 @@ function init_mission_trans() {
 
 function mission_ack_check() {
   if (mission_trans_state != MISSION_TRANS_STATE_IDLE) {
-    console.log('ERROR: Uploading mission not finish');
+    emitter.emit('status_text', 'ERROR: Uploading mission not finish');
   }
   mission_trans_state = MISSION_TRANS_STATE_IDLE;
 }
 
 function mission_get_all() {
-  console.log('Requesting all mission');
+  emitter.emit('status_text', 'Requesting all mission');
   if (mission_len <= 0) {
-    console.log('Warning: No mission on UAV');
+    emitter.emit('status_text', 'Warning: No mission on UAV');
     emitter.emit('reading_completed', []);
     return;
   }
@@ -1211,9 +1167,9 @@ function mission_get_all() {
 }
 
 function mission_print() {
-  console.log(mission_list);
+  emitter.emit('status_text', mission_list);
   for (var i = 0; i < mission_len; i++) {
-    console.log(JSON.stringify(mission_list[i]));
+    emitter.emit('status_text', JSON.stringify(mission_list[i]));
   }
 }
 
@@ -1222,7 +1178,7 @@ function mission_update(fields) {
     mission_list[fields.seq] = fields;
   }
   else {
-    console.log('ERROR: Mission seq not in legal range');
+    emitter.emit('status_text', 'ERROR: Mission seq not in legal range');
   }
 }
 
@@ -1232,11 +1188,11 @@ function mission_update_alt(seq, alt) {
       mission_list[seq].z = alt;
     }
     else {
-      console.log('ERROR: Reject Alt change, WAYPOINT needed');
+      emitter.emit('status_text', 'ERROR: Reject Alt change, WAYPOINT needed');
     }
   }
   else {
-    console.log('ERROR: Mission seq not in legal range');
+    emitter.emit('status_text', 'ERROR: Mission seq not in legal range');
   }
 }
 
@@ -1281,7 +1237,6 @@ function mission_to_gcs() {
   var last_speed = 0;
   maplist = [];
   for (var i = 0; i < mission_len; i++) {
-    //console.log(JSON.stringify(mission_list[i]));
     var cur_mission = mission_list[i];
     switch (cur_mission.command) {
       case mavheader.MAV_CMD_NAV_WAYPOINT:
@@ -1301,7 +1256,7 @@ function mission_to_gcs() {
           //   }
           // }
           // else{
-          //   console.log("ERROR: do change speed rejected on seq"+ cur_mission.param2);
+          //   emitter.emit('status_text', "ERROR: do change speed rejected on seq"+ cur_mission.param2);
           // }
           if (cur_mission.param2 > 0 && cur_mission.param2 <= 20) {
             last_speed = cur_mission.param2;
@@ -1326,7 +1281,6 @@ function mission_to_gcs() {
         break;
     }
   }
-  console.log(gcs_mission_list);
   save_gcslist(gcs_mission_list);
   return gcs_mission_list;
 }
@@ -1344,7 +1298,7 @@ function get_gcs_seq(uas_seq) {
 }
 
 function mission_from_gcs(gcs_mission_list, takeoff_alt, is_loop) {
-  console.log("is loop" + is_loop);
+  emitter.emit('status_text', "is loop" + is_loop);
   mission_len = 0;
   mission_list = [];
   var mis_seq = 0;
@@ -1428,7 +1382,7 @@ function mission_from_gcs(gcs_mission_list, takeoff_alt, is_loop) {
 
         break;
       default:
-        console.log('ERROR: Unsupported gcs mission')
+        emitter.emit('status_text', 'ERROR: Unsupported gcs mission')
         break;
     }
   }
@@ -1441,9 +1395,8 @@ function mission_from_gcs(gcs_mission_list, takeoff_alt, is_loop) {
     mission_list.push(mission);
   }
 
-  console.log(mission_list);
   if (mis_seq != mission_list.length) {
-    console.log('ERROR: mission length illeagal');
+    emitter.emit('status_text', 'ERROR: mission length illeagal');
   }
   mission_len = mission_list.length;
   save_gcslist(gcs_mission_list);
@@ -1520,7 +1473,7 @@ function init_UAS() {
 function connection_destroy() {
   /*mav_port.destroy();*/
   mav_port.close(function () {
-    console.log('Connection closed on ' + connection_path);
+    emitter.emit('status_text', 'Connection closed on ' + connection_path);
   });
   /*mav_port = null;*/
   /*mav_parser = null;*/
@@ -1530,7 +1483,6 @@ function connection_destroy() {
 }
 
 function send_rc_override(gcs_joystick) {
-  //console.log(gcs_joystick);
   if (connection_lost) return;
   mav_parser.createMessage("RC_CHANNELS_OVERRIDE", {
     'chan1_raw': gcs_joystick.chan1,
@@ -1551,7 +1503,6 @@ function send_rc_override(gcs_joystick) {
 }
 
 function send_offboard_control(joystick) {
-  //console.log(gcs_joystick);
   if (connection_lost) return;
   mav_parser.createMessage("OFFBOARD_CONTROL", {
     'chan1_raw': joystick.chan1,
@@ -1566,7 +1517,6 @@ function send_offboard_control(joystick) {
     'target_component': 1
   },
     function (message) {
-      // console.log(message);
       port_send_message(message);
       return;
     });
