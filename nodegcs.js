@@ -1,21 +1,4 @@
 var colors = require('colors');
-// var argv = require('optimist')
-// .usage('nodejs based Ground Control Station\nUsage: $0')
-// .alias('t', 'type')
-// .describe('t', 'Specity the type of expected connection: serial or tcp, default is serial')
-// .default('t', 'serial')
-// .alias('p', 'path')
-// .describe('p', 'Specify the path of serial or tcp connection, e.g. /dev/cu.usbmodem1 or 127.0.0.1:5760')
-// .demand('path')
-// .alias('b', 'baud')
-// .describe('b', 'Specify baudrate of that serial port, default is 57600')
-// .default('b', 57600)
-// .argv
-// ;
-
-// var Jetty = require("jetty");
-// var jetty = new Jetty(process.stdout);
-// jetty.clear();
 
 var charm = require('charm')();
 charm.pipe(process.stdout);
@@ -74,8 +57,12 @@ function put_status_his(text){
   }
 }
 
+var refreshed = false;
+
 function refresh_cmdline() {
-  charm.push(true);
+  if(refreshed){
+    charm.push();
+  }
   charm.position(0,1);
   if(connected){
     charm.write('Connected\t'.green.bold);
@@ -83,13 +70,13 @@ function refresh_cmdline() {
   else{
     charm.write('Disconnected\t'.red.bold);
   }
-  charm.write(uas.get_mode_str().magenta);
+  charm.write(uas.get_mode_str().magenta.bold);
   charm.write('\t'.cyan);
   if(arm_status){
-    charm.write('ARM\t'.yellow);
+    charm.write('ARM\t'.yellow.bold);
   }
   else{
-    charm.write('DISARM\t'.blue);
+    charm.write('DISARM\t'.grey.bold);
   }
   var tmp_str = 'SatNum: '+sat_num+'\t';
   charm.write(tmp_str.cyan);
@@ -107,7 +94,7 @@ function refresh_cmdline() {
   charm.write(tmp_str.cyan);
   tmp_str = 'Yaw: '+yaw+'\t';
   charm.write(tmp_str.cyan);
-  tmp_str = 'Lat: '+lat+'\t';
+  tmp_str = 'Lat: '+lat+'\t\t';
   charm.write(tmp_str.cyan);
   tmp_str = 'Lng: '+lng+'\t';
   charm.write(tmp_str.cyan);
@@ -121,8 +108,7 @@ function refresh_cmdline() {
   charm.write(tmp_str.cyan);
   tmp_str = 'Height: '+alt+'m\t';
   charm.write(tmp_str.cyan);
-  tmp_str = 'Current-Waypoint:'+curwp+'\t';
-  charm.write(tmp_str.cyan);
+
 
   for(var i=0;i<5;i++){
     charm.position(0, 4+i);
@@ -136,8 +122,12 @@ function refresh_cmdline() {
   }
 
   charm.position(0,9);
-  charm.write('➜ nodegcs '.cyan.bold);
-  charm.pop(true);
+  charm.write('➜ nodegcs v1.0'.cyan.bold);
+  charm.position(0,10);
+  if(refreshed){
+    charm.pop();
+  }
+  refreshed = true;
 }
 
 function is_tcp_connection(path){
@@ -245,23 +235,22 @@ stdin.on('data', function(d) {
     default:
       put_status_his('command not supported');
   }
+  charm.position(0, 10);
+  charm.erase('line');
   refresh_cmdline();
 });
 
 emitter.on('connection_regained', function(){
   put_status_his('connection regained\n'.yellow);
   connected = true;
-  refresh_cmdline();
 });
 
 emitter.on('arming', function(){
   arm_status = true;
-  refresh_cmdline();
 });
 
 emitter.on('disarming', function(){
   arm_status = false;
-  refresh_cmdline();
 });
 
 emitter.on('command_ack', function(field){

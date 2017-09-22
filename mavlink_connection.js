@@ -63,6 +63,7 @@ var APM_MODE_STR = [
   'RTL',
   'CIRCLE',
   'LAND',
+  'LAND',
   'DRIFT',
   'SPORT',
   'FLIP',
