@@ -15,9 +15,9 @@
   },
   "homepage": "https://github.com/kvenux/nodegcs",
   "devDependencies": {
+    "charm": "^1.0.2",
     "colors": "^1.1.2",
     "mavlink": "^1.0.1",
-    "optimist": "^0.6.1",
     "serialport": "^5.0.0"
   }
 }

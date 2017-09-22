@@ -164,6 +164,9 @@ stdin.on('data', function(d) {
     case 'start':
       uas.set_connection(1, '127.0.0.1', 5760);
       uas.set_default_stream_rates(1,1,1,1,1,1,0,0);
+      if(cmd_list.length > 1){
+        uas.set_connection(0, cmd_list[1], parseInt(cmd_list[2]));
+      }
     break;
     case 'stop':
       uas.pause_serial();
