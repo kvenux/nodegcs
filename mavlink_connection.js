@@ -759,26 +759,42 @@ function send_default_datastream() {
   else {
     //	Enable IMU_RAW, GPS_RAW, GPS_STATUS packets.
     // 5
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_SENSORS, rates_raw_sensors), 200);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_SENSORS, rates_raw_sensors);
+    }, 200);
     // Enable GPS_STATUS, CONTROL_STATUS, AUX_STATUS
     // 5
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTENDED_STATUS, rates_extended_status), 200 * 2);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTENDED_STATUS, rates_extended_status);
+    }, 200);
     // Enable RC_CHANNELS_SCALED, RC_CHANNELS_RAW, SERVO_OUTPUT_RAW
     // 5
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, rates_rc_channels), 200 * 3);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RC_CHANNELS, rates_rc_channels);
+    }, 200);
     // Enable ATTITUDE_CONTROLLER_OUTPUT, POSITION_CONTROLLER_OUTPUT, NAV_CONTROLLER_OUTPUT.
     // 2
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, rates_raw_controller), 200 * 4);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_RAW_CONTROLLER, rates_raw_controller);
+    }, 200);
     // 	Enable LOCAL_POSITION, GLOBAL_POSITION/GLOBAL_POSITION_INT messages.
     // 3
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_POSITION, rates_position), 200 * 5);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_POSITION, rates_position);
+    }, 200);
     // ATTITUDE
     // 10
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA1, rates_extra1), 200 * 6);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA1, rates_extra1);
+    }, 200);
     // 1
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA2, rates_extra2), 200 * 7);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA2, rates_extra2);
+    }, 200);
     // 2
-    setTimeout(set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3, rates_extra3), 200 * 8);
+    setTimeout(function(){
+      set_datastream_rate(MAV_DATA_STREAM.MAV_DATA_STREAM_EXTRA3, rates_extra3);
+    }, 200);
   }
 }
 
@@ -1163,7 +1179,9 @@ function mission_get_all() {
   }
   //mission_request_individual(0);
   for (var i = 0; i < mission_len && i < DOWNLOADING_NUM_AT_A_TIME; i++) {
-    setTimeout(mission_request_individual(i), 100);
+    setTimeout(function(i){
+      mission_request_individual(i);
+    }, 200);
   }
 }
 
