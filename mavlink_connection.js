@@ -1,4 +1,4 @@
-var SerialPort = require('serialport').SerialPort;
+var SerialPort = require('serialport');
 var mavlink = require('mavlink');
 var net = require('net');
 var EventEmitter = require("events").EventEmitter;
@@ -528,15 +528,15 @@ function show_error_callback(error) {
 function connect_serial() {
   //port configuration
   var usb_name = "/dev/cu.usbmodem1"
-  var usb_baudrate = 115200;
+  var usb_baudRate = 115200;
   var radio1_name = "/dev/cu.usbserial-A503UTCT"
   var radio2_name = "/dev/cu.usbserial-AJ032N5Q"
-  var radio_baudrate = 57600;
+  var radio_baudRate = 57600;
 
   // via usb
   if (connection_type == 0) {
     mav_port = new SerialPort(connection_path, {
-      baudrate: connection_baud
+      baudRate: connection_baud
     });
   }
   // via radio
@@ -551,11 +551,13 @@ function connect_serial() {
   }
 
   if (connection_type == 1) {
-    setTimeout(open_serial, 500);
+    setTimeout(function(){
+      open_serial();
+    }, 500);
   }
   else {
     emitter.emit('status_text', 'Connected to uav via serial:' + connection_path + ':' + connection_baud);
-    if (mav_port.isOpen()) {
+    if (mav_port.isOpen) {
       mav_port.close();
     }
     mav_port.open(open_serial);
@@ -606,7 +608,7 @@ function port_send_message(message) {
     mav_port.write(message.buffer);
     return;
   }
-  if (mav_port.isOpen()) {
+  if (mav_port.isOpen) {
     mav_port.write(message.buffer);
     var now_date = new Date();
     var new_measurement_time = parseInt(now_date.getTime() / measurement_period);
@@ -655,7 +657,7 @@ function port_send_customed_control(control_msg) {
     mav_port.write(msg_buf);
     return;
   }
-  if (mav_port.isOpen()) {
+  if (mav_port.isOpen) {
     mav_port.write(msg_buf);
   }
   else {
@@ -680,7 +682,7 @@ function port_send_switch_control(id, command) {
     mav_port.write(msg_buf);
     return;
   }
-  if (mav_port.isOpen()) {
+  if (mav_port.isOpen) {
     mav_port.write(msg_buf);
   }
   else {
@@ -944,7 +946,7 @@ function resume_serial() {
   mission_trans_end_time = 0;
   //mav_port.resume();
   if (connection_type == 0) {
-    if (mav_port.isOpen()) {
+    if (mav_port.isOpen) {
       mav_port.close();
     }
   }
@@ -959,7 +961,12 @@ function pause_serial() {
   clearInterval(datastream_timer);
   clearInterval(update_heartbeat_timer);
   //mav_port.pause();
-  mav_port.close();
+  if (connection_type == 0) {
+    mav_port.close();
+  }
+  else{
+    mav_port.destroy();
+  }
 }
 
 function start_serial() {
@@ -978,7 +985,7 @@ function start_serial() {
   mission_trans_start_time = 0;
   mission_trans_end_time = 0;
   if (connection_type == 0) {
-    if (mav_port.isOpen()) {
+    if (mav_port.isOpen) {
       mav_port.close();
     }
   }
@@ -1000,7 +1007,7 @@ function check_serial() {
   if (connection_type == 1) {
     return true;
   }
-  return mav_port.isOpen();
+  return mav_port.isOpen;
 }
 
 

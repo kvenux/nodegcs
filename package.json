@@ -18,6 +18,6 @@
     "charm": "^1.0.2",
     "colors": "^1.1.2",
     "mavlink": "^1.0.1",
-    "serialport": "^5.0.0"
+    "serialport": "^6.2.0"
   }
 }

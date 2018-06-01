@@ -162,10 +162,12 @@ stdin.on('data', function(d) {
   var cmd_list = cmd_str.split(' ')
   switch(cmd_list[0]){
     case 'start':
-      uas.set_connection(1, '127.0.0.1', 5760);
-      uas.set_default_stream_rates(1,1,1,1,1,1,0,0);
       if(cmd_list.length > 1){
         uas.set_connection(0, cmd_list[1], parseInt(cmd_list[2]));
+      }
+      else{
+        uas.set_connection(1, '127.0.0.1', 5760);
+        uas.set_default_stream_rates(1,1,1,1,1,1,0,0);
       }
     break;
     case 'stop':
@@ -291,6 +293,13 @@ emitter.on('sys_status', function(field){
 
 emitter.on('status_text', function(field){
   put_status_his(field);
+  refresh_cmdline();
+});
+
+emitter.on('serial_list', function(field){
+  for(var i = 0;i < field.length; i++){
+    put_status_his(field[i].comName);
+  }
   refresh_cmdline();
 });
 
